@@ -1,0 +1,133 @@
+/* assets/styles/AdminLayout.css */
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+  }
+  
+  /* Sidebar styling */
+  .sidebar {
+    width: 250px;
+    background-color: #333;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+  }
+  
+  .sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #444;
+  }
+  
+  .sidebar-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  
+  .sidebar-nav {
+    flex-grow: 1;
+    padding: 20px 0;
+  }
+  
+  .sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .sidebar-nav li {
+    margin-bottom: 5px;
+  }
+  
+  .sidebar-nav a {
+    display: block;
+    padding: 12px 20px;
+    color: #ddd;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+  
+  .sidebar-nav a:hover {
+    background-color: #444;
+    color: white;
+  }
+  
+  .sidebar-nav a.active {
+    background-color: #4a90e2;
+    color: white;
+  }
+  
+  .sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid #444;
+  }
+  
+  .logout-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .logout-button:hover {
+    background-color: #c9302c;
+  }
+  
+  /* Main content area */
+  .content {
+    flex: 1;
+    margin-left: 250px;
+    padding: 20px;
+  }
+  
+  .content-header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .content-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: #333;
+  }
+  
+  .content-body {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 200px;
+    }
+    
+    .content {
+      margin-left: 200px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .admin-layout {
+      flex-direction: column;
+    }
+    
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: static;
+    }
+    
+    .content {
+      margin-left: 0;
+    }
+  }

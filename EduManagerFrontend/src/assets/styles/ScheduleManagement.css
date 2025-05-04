@@ -1,0 +1,439 @@
+/* assets/styles/ScheduleManagement.css */
+.schedule-management {
+  padding: 20px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.page-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.success-message {
+  color: #155724;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin: 10px 0;
+  animation: fadeOut 5s ease-in-out forwards;
+}
+
+.error-message {
+  color: #721c24;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.schedule-management-section {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.section-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.add-schedule-button, .filter-toggle-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.filter-toggle-button {
+  background-color: #6c757d;
+}
+
+.add-schedule-button:hover {
+  background-color: #0069d9;
+}
+
+.filter-toggle-button:hover {
+  background-color: #5a6268;
+}
+
+/* Styles for the filters */
+.schedule-filters {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+}
+
+.filter-item {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-item input, .filter-item select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.clear-filter-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clear-filter-button:hover {
+  background-color: #c82333;
+}
+
+/* Styles for the schedule table */
+.schedules-list {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background-color: #f2f2f2;
+  font-weight: 600;
+}
+
+tr:hover {
+  background-color: #f9f9f9;
+}
+
+.action-button {
+  margin-right: 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: white;
+}
+
+.action-button.view {
+  background-color: #17a2b8;
+}
+
+.action-button.delete {
+  background-color: #dc3545;
+}
+
+.action-button.view:hover {
+  background-color: #138496;
+}
+
+.action-button.delete:hover {
+  background-color: #c82333;
+}
+
+/* Pagination styles */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.pagination-button {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 5px 10px;
+  min-width: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-button:hover {
+  background-color: #f0f0f0;
+}
+
+.pagination-button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.items-per-page select {
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Placeholder for empty schedule list */
+.schedule-placeholder {
+  text-align: center;
+  padding: 30px;
+  color: #666;
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #888;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.form-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submit-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.submit-button:hover {
+  background-color: #218838;
+}
+
+.cancel-button:hover {
+  background-color: #5a6268;
+}
+
+/* User selection styles */
+.user-selection-section {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.user-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.user-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.user-item:last-child {
+  border-bottom: none;
+}
+
+.user-item input[type="checkbox"] {
+  width: auto;
+  margin-right: 10px;
+}
+
+.user-item label {
+  flex: 1;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 15px;
+}
+
+.user-name {
+  font-weight: 500;
+}
+
+.user-email {
+  color: #666;
+}
+
+.user-role, .user-department {
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.user-role {
+  color: #0056b3;
+}
+
+.user-department {
+  color: #28a745;
+}
+
+.selected-count {
+  font-weight: 500;
+  color: #333;
+}
