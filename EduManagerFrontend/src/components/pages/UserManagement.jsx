@@ -204,6 +204,12 @@ const UserManagement = () => {
 
   const openEditModal = (user) => {
     setSelectedUser(user);
+    console.log('Editing user:', user); // Debug the user object
+    
+    // Find the department and staff type IDs based on names (if IDs are not directly available)
+    const department = departments.find(dept => dept.name === user.departmentName || dept.label === user.departmentName);
+    const staffType = staffTypes.find(type => type.name === user.staffTypeName);
+    
     editForm.setFieldsValue({
       id: user.id,
       email: user.email || '',
@@ -217,8 +223,8 @@ const UserManagement = () => {
       phoneNumber: user.phoneNumber || '',
       address: user.address || '',
       status: user.status || 'Đang hoạt động',
-      departmentId: user.departmentId || '',
-      staffTypeId: user.staffTypeId || ''
+      departmentId: user.departmentId || (department ? department.id : ''),
+      staffTypeId: user.staffTypeId || (staffType ? staffType.id : '')
     });
     setShowEditUserModal(true);
   };
@@ -559,7 +565,7 @@ const UserManagement = () => {
                 {
                   pattern: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/,
                   message: 'Mật khẩu phải chứa ít nhất một chữ cái và một số!',
-                  when: (value) => !!value // Chỉ validate nếu người dùng nhập mật khẩu
+                  when: (value) => !!value
                 }
               ]}
             >

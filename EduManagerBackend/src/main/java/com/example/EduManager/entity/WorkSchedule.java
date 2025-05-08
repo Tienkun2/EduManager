@@ -1,5 +1,6 @@
 package com.example.EduManager.entity;
 
+import com.example.EduManager.Enum.ScheduleStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -47,5 +48,9 @@ public class WorkSchedule {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING) // Lưu giá trị enum dưới dạng chuỗi trong DB
+    private ScheduleStatus status;
 
 }

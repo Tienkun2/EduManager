@@ -53,7 +53,7 @@ export const createDepartment = async (departmentData) => {
 // Cập nhật phòng ban
 export const updateDepartment = async (departmentId, departmentData) => {
   try {
-    const response = await axios.put(`${API_URL}/api/department/${departmentId}`, departmentData);
+    const response = await axios.put(`${API_URL}/api/departments/${departmentId}`, departmentData);
     return response.data;
   } catch (error) {
     console.error(`Error updating department with ID ${departmentId}:`, error);
@@ -64,7 +64,7 @@ export const updateDepartment = async (departmentId, departmentData) => {
 // Xóa phòng ban
 export const deleteDepartment = async (departmentId) => {
   try {
-    const response = await axios.delete(`${API_URL}/api/department/${departmentId}`);
+    const response = await axios.delete(`${API_URL}/api/departments/${departmentId}`);
     return response.data;
   } catch (error) {
     console.error(`Error deleting department with ID ${departmentId}:`, error);

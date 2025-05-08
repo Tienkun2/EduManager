@@ -111,14 +111,17 @@ export const getLeaveRequestsByStatus = async (status, page = 0, size = 10, filt
 // Update a leave request
 export const updateLeaveRequest = async (id, approverId, updateData) => {
   try {
-    const response = await axios.put(`${API_URL}/api/leave-requests/${id}`, {
+    const response = await axios.put(`${API_URL}/api/leave-requests/${id}/${approverId}`, {
       status: updateData.status,
       approvalComments: updateData.approvalComments || '',
-      approverId,
     });
-    return response.data.result;
+    return response.data;
   } catch (error) {
-    console.error(`Error updating leave request with ID ${id}:`, error);
+    console.error(`Error updating leave request with ID ${id}:`, {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+    });
     throw error;
   }
 };

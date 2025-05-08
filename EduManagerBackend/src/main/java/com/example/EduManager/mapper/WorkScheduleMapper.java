@@ -1,6 +1,5 @@
 package com.example.EduManager.mapper;
 
-
 import com.example.EduManager.dto.request.WorkScheduleCreationRequest;
 import com.example.EduManager.dto.response.WorkScheduleResponse;
 import com.example.EduManager.entity.WorkSchedule;
@@ -16,5 +15,6 @@ public interface WorkScheduleMapper {
 
     @Mapping(target = "id", source = "id")
     @Mapping(target = "userid", source = "user.id")
+    @Mapping(target = "status", source = "status")
     WorkScheduleResponse toWorkScheduleResponse(WorkSchedule workSchedule);
 }

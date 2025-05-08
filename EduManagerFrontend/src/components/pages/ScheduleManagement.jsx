@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Layout, Table, Button, Modal, Form, Input, Select, Alert, Space, Typography, Card, Divider, Checkbox, Tag, DatePicker 
+  Layout, Table, Button, Modal, Form, Input, Select, Alert, Space, Typography, Card, Divider, Checkbox, Tag, DatePicker, Spin 
 } from 'antd';
 import { EyeOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import WorkScheduleService from '../../services/workScheduleService';
@@ -53,7 +53,6 @@ const ScheduleManagement = () => {
     setIsLoading(true);
     try {
       const data = await WorkScheduleService.getAllWorkSchedules();
-      console.log('API response (schedules):', data);
       const normalizedData = data.map(schedule => ({
         ...schedule,
         userIds: schedule.userid ? [schedule.userid] : schedule.userIds || [],
@@ -75,7 +74,6 @@ const ScheduleManagement = () => {
   const fetchUsers = async () => {
     try {
       const data = await getAllUsers();
-      console.log('Fetched users:', data);
       setUsers(data || []);
     } catch (error) {
       console.error('Lỗi khi lấy danh sách người dùng:', error);
@@ -102,9 +100,6 @@ const ScheduleManagement = () => {
       });
     }
 
-    console.log('Filters:', filters);
-    console.log('Filtered schedules:', filtered);
-
     setPagination((prev) => ({ ...prev, total: filtered.length }));
     const start = (pagination.current - 1) * pagination.pageSize;
     const end = start + pagination.pageSize;
@@ -125,17 +120,6 @@ const ScheduleManagement = () => {
     setPagination(newPagination);
   };
 
-  const getFilteredUsers = useMemo(() => {
-    return users.filter(user => {
-      const matchesSearch = !filters.search || 
-        (user.fullName && user.fullName.toLowerCase().includes(filters.search.toLowerCase())) ||
-        (user.email && user.email.toLowerCase().includes(filters.search.toLowerCase()));
-      const matchesRole = !filters.role || user.role === filters.role;
-      const matchesDepartment = !filters.department || user.department === filters.department;
-      return matchesSearch && matchesRole && matchesDepartment;
-    });
-  }, [users, filters.search, filters.role, filters.department]);
-
   const handleAddSchedule = async (values) => {
     setIsLoading(true);
     try {
@@ -143,9 +127,8 @@ const ScheduleManagement = () => {
         ...values,
         startTime: values.startTime.toISOString(),
         endTime: values.endTime.toISOString(),
-        userIds: (values.userIds || []).map(id => id.toString()), // Ensure all IDs are strings
+        userIds: (values.userIds || []).map(id => id.toString()),
       };
-      console.log('Payload userIds:', payload.userIds); // Debug here
       if (!payload.userIds || payload.userIds.length === 0) {
         throw new Error('Vui lòng chọn ít nhất một người dùng.');
       }
@@ -173,7 +156,6 @@ const ScheduleManagement = () => {
         endTime: values.endTime.toISOString(),
         userIds: values.userIds || [],
       };
-      // Optimize: Assume backend supports updating schedule for all userIds in one call
       await WorkScheduleService.updateWorkSchedule(null, selectedSchedule.id, payload);
       setSuccessMessage('Cập nhật lịch làm việc thành công!');
       editForm.resetFields();
@@ -192,7 +174,6 @@ const ScheduleManagement = () => {
   const handleDeleteSchedule = async () => {
     setIsLoading(true);
     try {
-      // Delete schedule for all associated userIds
       await Promise.all(
         selectedSchedule.userIds.map(userId =>
           WorkScheduleService.deleteWorkSchedule(userId, selectedSchedule.id)
@@ -263,62 +244,121 @@ const ScheduleManagement = () => {
   ];
 
   const renderUserSelection = () => {
+    // Local filter state for modal-specific user selection
+    const [modalFilters, setModalFilters] = useState({
+      search: '',
+      role: '',
+      department: '',
+    });
+
+    // Compute filtered users based on modal-specific filters
+    const filteredUsers = useMemo(() => {
+      return users.filter((user) => {
+        const matchesSearch =
+          !modalFilters.search ||
+          (user.fullName && user.fullName.toLowerCase().includes(modalFilters.search.toLowerCase())) ||
+          (user.email && user.email.toLowerCase().includes(modalFilters.search.toLowerCase()));
+        const matchesRole = !modalFilters.role || user.role === modalFilters.role;
+        const matchesDepartment = !modalFilters.department || user.department === modalFilters.department;
+        return matchesSearch && matchesRole && matchesDepartment;
+      });
+    }, [users, modalFilters.search, modalFilters.role, modalFilters.department]);
+
+    // Handle filter changes
+    const handleModalFilterChange = (key, value) => {
+      setModalFilters((prev) => ({ ...prev, [key]: value }));
+    };
+
+    // Handle clear filters
+    const handleClearModalFilters = () => {
+      setModalFilters({ search: '', role: '', department: '' });
+    };
+
     return (
       <div>
-        <Space style={{ marginBottom: 16, width: '100%' }} wrap>
-          <Input
-            placeholder="Tìm kiếm theo tên hoặc email"
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            style={{ width: 200 }}
-          />
-          <Select
-            placeholder="Tất cả chức vụ"
-            value={filters.role}
-            onChange={(value) => setFilters({ ...filters, role: value })}
-            style={{ width: 150 }}
-            allowClear
+        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+          {/* Filter Inputs */}
+          <div>
+            <Text strong>Lọc nhân viên</Text>
+            <Divider style={{ margin: '12px 0' }} />
+            <Space wrap>
+              <div>
+                <Text>Tìm kiếm</Text>
+                <Input
+                  placeholder="Tên hoặc email"
+                  value={modalFilters.search}
+                  onChange={(e) => handleModalFilterChange('search', e.target.value)}
+                  style={{ width: 200, marginTop: 4 }}
+                  allowClear
+                />
+              </div>
+              <div>
+                <Text>Chức vụ</Text>
+                <Select
+                  placeholder="Tất cả chức vụ"
+                  value={modalFilters.role}
+                  onChange={(value) => handleModalFilterChange('role', value)}
+                  style={{ width: 150, marginTop: 4 }}
+                  allowClear
+                >
+                  {roles.map((role, index) => (
+                    <Option key={index} value={role}>{role}</Option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <Text>Phòng ban</Text>
+                <Select
+                  placeholder="Tất cả phòng ban"
+                  value={modalFilters.department}
+                  onChange={(value) => handleModalFilterChange('department', value)}
+                  style={{ width: 150, marginTop: 4 }}
+                  allowClear
+                >
+                  {departments.map((dept, index) => (
+                    <Option key={index} value={dept}>{dept}</Option>
+                  ))}
+                </Select>
+              </div>
+              <Button onClick={handleClearModalFilters}>Xóa bộ lọc</Button>
+            </Space>
+          </div>
+
+          {/* User Selection */}
+          <Form.Item
+            name="userIds"
+            rules={[{ required: true, message: 'Vui lòng chọn ít nhất một người dùng' }]}
+            validateTrigger="onSubmit"
           >
-            {roles.map((role, index) => (
-              <Option key={index} value={role}>{role}</Option>
-            ))}
-          </Select>
-          <Select
-            placeholder="Tất cả phòng ban"
-            value={filters.department}
-            onChange={(value) => setFilters({ ...filters, department: value })}
-            style={{ width: 150 }}
-            allowClear
-          >
-            {departments.map((dept, index) => (
-              <Option key={index} value={dept}>{dept}</Option>
-            ))}
-          </Select>
-          <Button onClick={() => setFilters({ search: '', role: '', department: '', date: null })}>
-            Xóa bộ lọc
-          </Button>
-        </Space>
-        <Form.Item
-          name="userIds"
-          rules={[{ required: true, message: 'Vui lòng chọn ít nhất một người dùng' }]}
-        >
-          <Checkbox.Group style={{ width: '100%' }}>
-            {getFilteredUsers.length > 0 ? (
-              getFilteredUsers.map(user => (
-                <div key={user.id} style={{ marginBottom: 8 }}>
-                  <Checkbox value={user.id}>
-                    {user.fullName || 'Không có tên'} ({user.email})
-                    {user.role && <Tag style={{ marginLeft: 8 }}>{user.role}</Tag>}
-                    {user.department && <Tag>{user.department}</Tag>}
-                  </Checkbox>
-                </div>
-              ))
+            {isLoading ? (
+              <Spin tip="Đang tải danh sách nhân viên..." />
             ) : (
-              <Text>Không tìm thấy người dùng phù hợp</Text>
+              <Checkbox.Group style={{ width: '100%' }}>
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <div key={user.id} style={{ marginBottom: 8 }}>
+                      <Checkbox value={user.id}>
+                        {user.fullName || 'Không có tên'} ({user.email})
+                        {user.role && <Tag style={{ marginLeft: 8 }}>{user.role}</Tag>}
+                        {user.department && <Tag>{user.department}</Tag>}
+                      </Checkbox>
+                    </div>
+                  ))
+                ) : (
+                  <Text type="secondary">Không tìm thấy người dùng phù hợp</Text>
+                )}
+              </Checkbox.Group>
             )}
-          </Checkbox.Group>
-        </Form.Item>
-        <Text>Đã chọn: {editForm.getFieldValue('userIds')?.length || addForm.getFieldValue('userIds')?.length || 0} người</Text>
+          </Form.Item>
+
+          {/* Summary */}
+          <Space>
+            <Text>
+              Đã chọn: {(editForm.getFieldValue('userIds') || addForm.getFieldValue('userIds') || []).length} người
+            </Text>
+            <Text type="secondary">Tổng số nhân viên hiển thị: {filteredUsers.length}</Text>
+          </Space>
+        </Space>
       </div>
     );
   };
@@ -536,7 +576,7 @@ const ScheduleManagement = () => {
                     if (!value || !getFieldValue('startTime') || value.isAfter(getFieldValue('startTime'))) {
                       return Promise.resolve();
                     }
-                    return Promise.reject(new Error('Thời gian kết thích phải sau thời gian bắt đầu'));
+                    return Promise.reject(new Error('Thời gian kết thúc phải sau thời gian bắt đầu'));
                   },
                 }),
               ]}

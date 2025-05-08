@@ -5,7 +5,7 @@ import {
 } from 'antd';
 import {
   CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined,
-  SearchOutlined, UserOutlined
+  SearchOutlined, StopOutlined
 } from '@ant-design/icons';
 import * as LeaveRequestService from '../../services/leaveRequestService';
 import { isAuthenticated, getToken, logout } from '../../services/authService';
@@ -160,8 +160,11 @@ const AdminLeaveRequestManagement = () => {
       setShowModal(false);
       fetchLeaveRequests();
     } catch (err) {
-      setError('Không thể phê duyệt đơn xin nghỉ phép. Vui lòng thử lại.');
-      console.error(err);
+      const errorMessage = err.response?.status === 405
+        ? 'Phương thức API không được hỗ trợ. Vui lòng kiểm tra cấu hình backend.'
+        : err.response?.data?.message || 'Không thể phê duyệt đơn xin nghỉ phép.';
+      setError(errorMessage);
+      console.error('Error approving leave request:', err);
     } finally {
       setLoading(false);
     }
@@ -178,8 +181,11 @@ const AdminLeaveRequestManagement = () => {
       setShowModal(false);
       fetchLeaveRequests();
     } catch (err) {
-      setError('Không thể từ chối đơn xin nghỉ phép. Vui lòng thử lại.');
-      console.error(err);
+      const errorMessage = err.response?.status === 405
+        ? 'Phương thức API không được hỗ trợ. Vui lòng kiểm tra cấu hình backend.'
+        : err.response?.data?.message || 'Không thể từ chối đơn xin nghỉ phép.';
+      setError(errorMessage);
+      console.error('Error rejecting leave request:', err);
     } finally {
       setLoading(false);
     }
@@ -201,8 +207,11 @@ const AdminLeaveRequestManagement = () => {
       setShowModal(false);
       fetchLeaveRequests();
     } catch (err) {
-      setError('Không thể cập nhật trạng thái đơn xin nghỉ phép. Vui lòng thử lại.');
-      console.error(err);
+      const errorMessage = err.response?.status === 405
+        ? 'Phương thức API không được hỗ trợ. Vui lòng kiểm tra cấu hình backend.'
+        : err.response?.data?.message || 'Không thể cập nhật trạng thái đơn xin nghỉ phép.';
+      setError(errorMessage);
+      console.error('Error updating leave request status:', err);
     } finally {
       setLoading(false);
     }
@@ -222,8 +231,8 @@ const AdminLeaveRequestManagement = () => {
           setShowModal(false);
           fetchLeaveRequests();
         } catch (err) {
-          setError('Không thể xóa đơn xin nghỉ phép. Vui lòng thử lại.');
-          console.error(err);
+          setError(err.response?.data?.message || 'Không thể xóa đơn xin nghỉ phép. Vui lòng thử lại.');
+          console.error('Error deleting leave request:', err);
         } finally {
           setLoading(false);
         }
@@ -249,9 +258,10 @@ const AdminLeaveRequestManagement = () => {
         statusText = 'Đang chờ';
         icon = <ClockCircleOutlined />;
         break;
-      case 'CANCELED':
+      case 'CANCELLLED':
         color = 'default';
         statusText = 'Đã hủy';
+        icon = <StopOutlined />;
         break;
       default:
         color = 'processing';
@@ -328,7 +338,7 @@ const AdminLeaveRequestManagement = () => {
         { text: 'Đang chờ', value: 'PENDING' },
         { text: 'Đã phê duyệt', value: 'APPROVED' },
         { text: 'Đã từ chối', value: 'REJECTED' },
-        { text: 'Đã hủy', value: 'CANCELED' },
+        { text: 'Đã hủy', value: 'CANCELLED' },
       ],
       onFilter: (value, record) => record.status === value,
     },
@@ -410,7 +420,7 @@ const AdminLeaveRequestManagement = () => {
               <Option value="PENDING">Đang chờ</Option>
               <Option value="APPROVED">Đã phê duyệt</Option>
               <Option value="REJECTED">Đã từ chối</Option>
-              <Option value="CANCELED">Đã hủy</Option>
+              <Option value="CANCELLED">Đã hủy</Option>
             </Select>
           </div>
 
@@ -491,7 +501,7 @@ const AdminLeaveRequestManagement = () => {
             <Option value="PENDING">Đang chờ</Option>
             <Option value="APPROVED">Đã phê duyệt</Option>
             <Option value="REJECTED">Đã từ chối</Option>
-            <Option value="CANCELED">Đã hủy</Option>
+            <Option value="CANCELLED">Đã hủy</Option>
           </Select>
         </Col>
       </Row>

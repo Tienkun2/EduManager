@@ -16,6 +16,7 @@ public enum ErrorCode {
     UNAUTHENTICATED(1003, "User chưa được xác thực", HttpStatus.UNAUTHORIZED),
     UNAUTHORIZED(1004, "User không có quyền truy cập", HttpStatus.FORBIDDEN),
     USER_EXISTED(1005, "User đã tồn tại", HttpStatus.BAD_REQUEST),
+    USER_LOCKED(1006, "Tài khoản đã bị khóa, xin liên hệ quản trị viên", HttpStatus.UNAUTHORIZED),
 
     // Validation errors for User DTO
     INVALID_EMAIL(1010, "Email không hợp lệ hoặc không đúng định dạng", HttpStatus.BAD_REQUEST),
@@ -28,6 +29,10 @@ public enum ErrorCode {
     INVALID_PHONE_NUMBER(1017, "Số điện thoại không hợp lệ, ví dụ: 0987654321 hoặc +84987654321", HttpStatus.BAD_REQUEST),
     INVALID_ADDRESS(1018, "Địa chỉ không hợp lệ, tối đa 255 ký tự", HttpStatus.BAD_REQUEST),
     INVALID_STATUS(1019, "Trạng thái không hợp lệ, phải là Đang hoạt động, Đã khóa hoặc Đã nghỉ việc", HttpStatus.BAD_REQUEST),
+    INVALID_CREDENTIALS(1020, "Mật khẩu hiện tại không đúng", HttpStatus.BAD_REQUEST),
+    PASSWORD_MISMATCH(1021, "Mật khẩu mới và xác nhận mật khẩu không khớp", HttpStatus.BAD_REQUEST),
+    INVALID_USER_STATUS(1022, "Trạng thái người dùng không hợp lệ", HttpStatus.BAD_REQUEST),
+
 
     // Department errors
     DEPARTMENT_NOT_FOUND(3000, "Phòng ban không tồn tại", HttpStatus.BAD_REQUEST),
@@ -47,12 +52,23 @@ public enum ErrorCode {
     SCHEDULE_OVERLAP(5001, "Lịch làm việc bị trùng", HttpStatus.BAD_REQUEST),
     LOCATION_OVERLAP(5002, "Địa điểm bị trùng", HttpStatus.BAD_REQUEST),
     CLASS_OVERLAP(5003, "Lớp học bị trùng", HttpStatus.BAD_REQUEST),
-    SCHEDULE_NOT_FOUND(5003, "Lịch làm việc không tồn tại", HttpStatus.BAD_REQUEST),
+    SCHEDULE_NOT_FOUND(5004, "Lịch làm việc không tồn tại", HttpStatus.BAD_REQUEST),
+    INVALID_TIME_RANGE(5005, "Thời gian bắt đầu phải trước thời gian kết thúc", HttpStatus.BAD_REQUEST),
+    INVALID_SCHEDULE_STATUS(5006, "Trạng thái lịch làm việc không hợp lệ", HttpStatus.BAD_REQUEST),
 
     // Leave Request errors
     LEAVE_REQUEST_NOT_FOUND(6001, "Yêu cầu nghỉ phép không tồn tại", HttpStatus.BAD_REQUEST),
     INVALID_OPERATION(6002, "Không thể thực hiện thao tác này", HttpStatus.BAD_REQUEST),
-    SUBTITLE_USER_NOT_FOUND(6003, "Người thay thế không tồn tại", HttpStatus.BAD_REQUEST);
+    SUBTITLE_USER_NOT_FOUND(6003, "Người thay thế không tồn tại", HttpStatus.BAD_REQUEST),
+
+    // Notification
+    SENDER_NOT_FOUND(7001, "Không tìm thấy người gửi", HttpStatus.BAD_REQUEST),
+    RECIVER_NOT_FOUND(7002, "Không tìm thấy người nhận", HttpStatus.BAD_REQUEST),
+    NOTIFICAION_NOT_FOUND(7002, "Không tìm thấy thông báo", HttpStatus.BAD_REQUEST),
+    BROADCAST_NOTIFICAION_NOT_FOUND(7002, "Không tìm thấy danh sách thông báo", HttpStatus.BAD_REQUEST),
+
+    // Feedback errors
+    FEEDBACK_NOT_EXISTED(8001, "Phản ánh không tồn tại", HttpStatus.BAD_REQUEST);
     private int code;
     private String message;
     private HttpStatusCode statusCode;

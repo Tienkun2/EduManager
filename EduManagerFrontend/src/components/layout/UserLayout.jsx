@@ -1,8 +1,9 @@
 import React, { useState, useEffect, Component } from 'react';
-import { Layout, Menu, Button, Typography, Card, message, Badge, Dropdown, Spin, List, Modal } from 'antd';
+import { Layout, Menu, Button, Typography, Card, message, Dropdown, Spin, List, Modal,Badge, Tag } from 'antd';
 import { HomeOutlined, CalendarOutlined, FileTextOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, BellOutlined } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { logout, getCurrentUser, getToken, authRequest } from '../../services/authService';
+import { getNotificationsForUser, markNotificationAsRead } from '../../services/notificationService';
 import { jwtDecode } from 'jwt-decode';
 import dayjs from 'dayjs';
 
@@ -51,35 +52,14 @@ const UserLayout = ({ children }) => {
       }
     };
 
-    const fetchNotifications = () => {
-      // Mock API response
-      const mockNotifications = [
-        {
-          id: 1,
-          type: 'LEAVE',
-          message: 'Đơn xin nghỉ phép từ 10/05/2025 đến 12/05/2025 đã được phê duyệt.',
-          createdAt: '2025-05-03T10:00:00Z',
-          read: false,
-          link: '/user/leave-requests/1',
-        },
-        {
-          id: 2,
-          type: 'SCHEDULE',
-          message: 'Lịch làm việc mới được thêm cho ngày 15/05/2025.',
-          createdAt: '2025-05-03T09:30:00Z',
-          read: false,
-          link: '/user/schedules/15-05-2025',
-        },
-        {
-          id: 3,
-          type: 'SYSTEM',
-          message: 'Hệ thống sẽ bảo trì vào 04/05/2025 từ 00:00 đến 02:00.',
-          createdAt: '2025-05-02T15:00:00Z',
-          read: true,
-          link: null,
-        },
-      ];
-      setNotifications(mockNotifications);
+    const fetchNotifications = async () => {
+      try {
+        const notifs = await getNotificationsForUser();
+        setNotifications(notifs);
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+        message.error('Không thể tải thông báo. Vui lòng thử lại.');
+      }
     };
 
     const checkSessionTimeout = () => {
@@ -155,20 +135,41 @@ const UserLayout = ({ children }) => {
     }
   };
 
-  const markAllNotificationsRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true }))
-    );
+  const markAllNotificationsRead = async () => {
+    try {
+      const unreadNotifications = notifications.filter((n) => n.status === 'UNREAD');
+      if (unreadNotifications.length === 0) {
+        message.info('Không có thông báo nào chưa đọc.');
+        return;
+      }
+      await Promise.all(
+        unreadNotifications.map((n) => markNotificationAsRead(n.id))
+      );
+      setNotifications((prev) => prev.map((n) => ({ ...n, status: 'READ' })));
+      message.success('Đã đánh dấu tất cả thông báo là đã đọc.');
+    } catch (err) {
+      console.error('Error marking all notifications as read:', err);
+      message.error('Không thể đánh dấu tất cả đã đọc.');
+    }
   };
 
-  const handleNotificationClick = (notification) => {
-    if (notification.link) {
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === notification.id ? { ...n, read: true } : n
-        )
-      );
-      navigate(notification.link);
+  const handleNotificationClick = async (notification) => {
+    try {
+      if (notification.status === 'UNREAD') {
+        await markNotificationAsRead(notification.id);
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, status: 'READ' } : n
+          )
+        );
+        message.success('Đã đánh dấu thông báo là đã đọc.');
+      }
+      if (notification.link) {
+        navigate(notification.link);
+      }
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+      message.error('Không thể đánh dấu thông báo là đã đọc.');
     }
   };
 
@@ -176,16 +177,33 @@ const UserLayout = ({ children }) => {
     const path = location.pathname;
     if (path.includes('/user/schedules')) return 'schedules';
     if (path.includes('/user/leave-requests')) return 'leave-requests';
+    if (path.includes('/user/feedbacks')) return 'feedbacks';
     return 'dashboard';
   };
 
   const isTeamLead = user?.roles?.includes('ROLE_TEAM_LEAD');
 
+  // Hàm xác định màu sắc cho từng loại thông báo
+  const getNotificationTypeColor = (type) => {
+    switch (type) {
+      case 'SYSTEM':
+        return 'blue';
+      case 'PROMOTION':
+        return 'green';
+      case 'SUPPORT':
+        return 'purple';
+      case 'FEEDBACK':
+        return 'orange';
+      default:
+        return 'default';
+    }
+  };
+
   const notificationMenu = (
-    <Card style={{ width: 350, maxHeight: 400, overflowY: 'auto' }}>
+    <Card style={{ width: 400, maxHeight: 400, overflowY: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
         <Text strong>Thông báo</Text>
-        {notifications.some((n) => !n.read) && (
+        {notifications.some((n) => n.status === 'UNREAD') && (
           <Button
             type="link"
             size="small"
@@ -201,19 +219,31 @@ const UserLayout = ({ children }) => {
         renderItem={(item) => (
           <List.Item
             style={{
-              padding: '8px 0',
+              padding: '12px 8px',
               borderBottom: '1px solid #f0f0f0',
-              cursor: item.link ? 'pointer' : 'default',
+              cursor: 'pointer',
+              background: item.status === 'UNREAD' ? '#e6f7ff' : 'white',
             }}
             onClick={() => handleNotificationClick(item)}
           >
             <List.Item.Meta
               title={
-                <Text strong={!item.read} type={item.read ? 'secondary' : ''}>
-                  {item.message}
-                </Text>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text strong={item.status === 'UNREAD'} type={item.status === 'READ' ? 'secondary' : ''}>
+                    {item.title}
+                  </Text>
+                  <Tag color={getNotificationTypeColor(item.type)}>{item.type}</Tag>
+                </div>
               }
-              description={dayjs(item.createdAt).format('DD/MM/YYYY HH:mm')}
+              description={
+                <div>
+                  <Text>{item.content}</Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    {dayjs(item.createdAt).format('DD/MM/YYYY HH:mm')}
+                  </Text>
+                </div>
+              }
             />
           </List.Item>
         )}
@@ -265,6 +295,9 @@ const UserLayout = ({ children }) => {
           <Menu.Item key="leave-requests" icon={<FileTextOutlined />} aria-label="Đơn xin nghỉ phép">
             Đơn xin nghỉ phép
           </Menu.Item>
+          <Menu.Item key="feedbacks" icon={<FileTextOutlined />} aria-label="Đơn xin nghỉ phép">
+            Phản hồi của bạn
+          </Menu.Item>
           {isTeamLead && (
             <Menu.Item key="team-management" icon={<HomeOutlined />} aria-label="Quản lý đội nhóm">
               Quản lý đội nhóm
@@ -296,18 +329,16 @@ const UserLayout = ({ children }) => {
             </Title>
           </div>
           <div>
-            <Dropdown overlay={notificationMenu} trigger={['click']}>
+          <Dropdown overlay={notificationMenu} trigger={['click']}>
+            <Badge count={notifications.filter((n) => n.status === 'UNREAD').length} size="small">
               <Button
                 type="text"
-                icon={
-                  <Badge count={notifications.filter((n) => !n.read).length}>
-                    <BellOutlined />
-                  </Badge>
-                }
+                icon={<BellOutlined />}
                 style={{ marginRight: 16 }}
                 aria-label="Thông báo"
               />
-            </Dropdown>
+            </Badge>
+          </Dropdown>
             <Button
               type="link"
               icon={<LogoutOutlined />}

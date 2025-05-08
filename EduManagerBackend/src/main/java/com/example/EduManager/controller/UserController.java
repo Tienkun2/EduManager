@@ -1,6 +1,7 @@
 package com.example.EduManager.controller;
 
 import com.example.EduManager.dto.request.ApiResponse;
+import com.example.EduManager.dto.request.ChangePassworkRequest;
 import com.example.EduManager.dto.request.UserCreationRequest;
 import com.example.EduManager.dto.request.UserUpdateRequest;
 import com.example.EduManager.dto.response.UserResponse;
@@ -73,6 +74,7 @@ public class UserController {
 
 
     @GetMapping("/myInfo")
+    @PreAuthorize("hasRole('USER')")
     public ApiResponse<UserResponse> getMyInfo(){
         return ApiResponse.<UserResponse>builder()
                 .result(userService.getMyInfo())
@@ -85,5 +87,14 @@ public class UserController {
 //                .result(userService.updateMyInfo(request))
 //                .build();
 //    }
+
+    @PutMapping("/updateMyPassword")
+    public ApiResponse<UserResponse> updateMyPassword(@RequestBody ChangePassworkRequest request){
+        return ApiResponse.<UserResponse>builder()
+                .code(200)
+                .message("Update password succesfull!!!")
+                .result(userService.updateMyPassword(request))
+                .build();
+    }
 
 }

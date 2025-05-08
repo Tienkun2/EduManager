@@ -1,5 +1,6 @@
 package com.example.EduManager.dto.response;
 
+import com.example.EduManager.Enum.ScheduleStatus;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -20,4 +21,5 @@ public class WorkScheduleResponse {
     String location; // Địa điểm công việc
     LocalDateTime startTime; // Thời gian bắt đầu công việc
     LocalDateTime endTime; // Thời gian kết thúc công việc
+    ScheduleStatus status;
 }

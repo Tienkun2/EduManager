@@ -3,7 +3,8 @@ import { Table, Button, Modal, Form, Input, Select, DatePicker, Card, Alert, Spa
 import { FileTextOutlined, SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import LeaveRequestService from '../../services/leaveRequestService';
-import { getToken } from '../../services/authService';
+import { getToken, getCurrentUser } from '../../services/authService';
+import { createNotification } from '../../services/notificationService';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -101,11 +102,17 @@ const UserLeaveRequestManagement = () => {
 
   const handleAddLeaveRequest = async (values) => {
     setLoading(true);
+    setError(null);
     try {
       const token = getToken();
       if (!token) {
         throw new Error('Vui lòng đăng nhập lại.');
       }
+      const user = getCurrentUser();
+      if (!user || !user.id) {
+        throw new Error('Không thể lấy thông tin người dùng. Vui lòng đăng nhập lại.');
+      }
+
       const payload = {
         leaveType: values.leaveType,
         reason: values.reason,
@@ -114,8 +121,32 @@ const UserLeaveRequestManagement = () => {
         attachmentUrl: values.attachmentUrl || '',
       };
       console.log('Sending leave request payload:', payload);
-      await LeaveRequestService.createLeaveRequest(payload);
-      setSuccess('Tạo đơn xin nghỉ phép thành công!');
+      const response = await LeaveRequestService.createLeaveRequest(payload);
+      const leaveRequestId = response?.result?.id || 'unknown';
+
+      // Gửi thông báo đến admin
+      try {
+        const notificationData = {
+          senderId: user.id,
+          receiverId: null, // Gửi đến tất cả admin
+          title: `Đơn xin nghỉ phép mới từ ${user.fullName || 'Người dùng'}`,
+          content: `Đơn xin nghỉ phép mới (ID: ${leaveRequestId}, Loại: ${leaveTypeOptions.find(opt => opt.value === values.leaveType)?.label || values.leaveType}, từ ${dayjs(values.dates[0]).format('DD/MM/YYYY')} đến ${dayjs(values.dates[1]).format('DD/MM/YYYY')}). Vui lòng kiểm tra và phê duyệt.`,
+          type: 'SUPPORT',
+        };
+        await createNotification(notificationData);
+      } catch (notificationErr) {
+        console.error('Error sending notification:', notificationErr);
+        setError('Tạo đơn xin nghỉ phép thành công, nhưng không thể gửi thông báo đến admin.');
+        setSuccess(null);
+        setShowAddModal(false);
+        form.resetFields();
+        fetchLeaveRequests();
+        setTimeout(() => setError(null), 5000);
+        setLoading(false);
+        return;
+      }
+
+      setSuccess('Tạo đơn xin nghỉ phép và gửi thông báo thành công!');
       setShowAddModal(false);
       form.resetFields();
       fetchLeaveRequests();

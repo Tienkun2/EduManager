@@ -29,6 +29,7 @@ spring:
         jwt:
           jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/.well-known/jwks.json
 
+
 #jwt:
 #  private-key: classpath:keys/private.pem
 #  public-key: classpath:keys/public.pem

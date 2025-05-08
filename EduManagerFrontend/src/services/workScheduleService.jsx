@@ -84,6 +84,17 @@ export const updateWorkSchedule = async (userId, scheduleId, workScheduleData) =
   }
 };
 
+// Cập nhật trạng thái lịch làm việc
+export const updateWorkScheduleStatus = async (userId, scheduleId, status) => {
+  try {
+    const response = await axios.put(`${API_URL}/api/work-schedule/${userId}/${scheduleId}/status`, { status });
+    return response.data.result;
+  } catch (error) {
+    console.error(`Error updating work schedule status for ID ${scheduleId}:`, error);
+    throw error;
+  }
+};
+
 // Xóa lịch làm việc
 export const deleteWorkSchedule = async (userId, scheduleId) => {
   try {
@@ -127,6 +138,7 @@ export const getUserWorkSchedulesByUser = async () => {
     throw error;
   }
 };
+
 // Tạo object service để export default
 const WorkScheduleService = {
   getAllWorkSchedules,
@@ -134,6 +146,7 @@ const WorkScheduleService = {
   createWorkSchedule,
   createWorkScheduleForMultipleUsers,
   updateWorkSchedule,
+  updateWorkScheduleStatus,
   deleteWorkSchedule,
   getWorkSchedulesByTimeRange,
   getUserWorkSchedules,

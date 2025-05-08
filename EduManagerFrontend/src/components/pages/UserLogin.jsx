@@ -35,7 +35,12 @@ const UserLogin = () => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError('Đã xảy ra lỗi khi đăng nhập');
+      // Check if the error is due to a locked account
+      if (err.response?.data?.code === 1007) {
+        setError(err.response.data.message || 'Tài khoản của bạn đã bị khóa');
+      } else {
+        setError('Đã xảy ra lỗi khi đăng nhập');
+      }
       form.resetFields();
     } finally {
       setLoading(false);
@@ -128,8 +133,8 @@ const UserLogin = () => {
               </Button>
             </Form.Item>
             <Text style={{ display: 'block', textAlign: 'center', marginTop: 16 }}>
-              Chưa có tài khoản?{' '}
-              <a onClick={() => navigate('/register')}>Đăng ký</a>
+              {/* Chưa có tài khoản?{' '}
+              <a onClick={() => navigate('/register')}>Đăng ký</a> */}
             </Text>
           </Form>
         </Card>

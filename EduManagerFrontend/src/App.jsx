@@ -10,10 +10,15 @@ import StaffTypeManagement from './components/pages/StaffTypeManagement';
 import DepartmentManagement from './components/pages/DepartmentManagement';
 import AdminLeaveRequestManagement from './components/pages/LeaveRequestManagement';
 import AttendanceManagement from './components/pages/AttendancesManagement';
+import NotificationManagement from './components/pages/NotificationManagement';
+import BroadcastNotificationManagement from './components/pages/BroadcastNotificationManagement';
 import StatisticManagement from './components/pages/StatisticManagement';
+import FeedbackManagement from './components/pages/FeedbackManagement';
 import UserDashboard from './components/pages/UserDashboard';
 import UserScheduleManagement from './components/pages/UserScheduleManagement';
 import UserLeaveRequestManagement from './components/pages/UserLeaveRequestManagement';
+import ChangePassword from './components/pages/ChangePassword';
+import UserFeedbackManagement from './components/pages/UserFeedbackManagement';
 import PrivateRoute from './components/pages/privateRoute';
 
 function App() {
@@ -38,6 +43,9 @@ function App() {
                   <Route path="schedules" element={<ScheduleManagement />} />
                   <Route path="leave-requests" element={<AdminLeaveRequestManagement />} />
                   <Route path="attendances" element={<AttendanceManagement />} />
+                  <Route path="notifications" element={<NotificationManagement />} />
+                  <Route path="feedbacks" element={<FeedbackManagement />} />
+                  {/* <Route path="broadcast-notifications" element={<BroadcastNotificationManagement />} /> */}
                   <Route path="statistics" element={<StatisticManagement />} />
                   {/* Nếu không khớp các route con, chuyển hướng về /admin/users */}
                   <Route path="*" element={<Navigate to="/admin/users" replace />} />
@@ -59,6 +67,9 @@ function App() {
                   <Route path="dashboard" element={<UserDashboard />} />
                   <Route path="schedules" element={<UserScheduleManagement />} />
                   <Route path="leave-requests" element={<UserLeaveRequestManagement />} />
+                  <Route path="change-password" element={<ChangePassword />} />
+                  <Route path="feedbacks" element={<UserFeedbackManagement />} />
+                  {/* Nếu không khớp các route con, chuyển hướng về /user/dashboard */}
                 </Routes>
               </UserLayout>
             </PrivateRoute>

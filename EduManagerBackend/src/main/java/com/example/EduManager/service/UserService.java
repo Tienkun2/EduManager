@@ -1,7 +1,7 @@
 package com.example.EduManager.service;
 
 import com.example.EduManager.Enum.ErrorCode;
-import com.example.EduManager.Enum.Role;
+import com.example.EduManager.dto.request.ChangePassworkRequest;
 import com.example.EduManager.dto.request.UserCreationRequest;
 import com.example.EduManager.dto.request.UserUpdateRequest;
 import com.example.EduManager.dto.response.UserResponse;
@@ -23,7 +23,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
@@ -69,14 +68,18 @@ public class UserService {
         return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    public UserResponse updateUser(String id, UserUpdateRequest request){
+    public UserResponse updateUser(String id, UserUpdateRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        userMapper.updateUser(user, request);
 
-        userMapper.updateUser(user,request);
+        if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
 
         var roles = roleRepository.findAllById(request.getRole());
         user.setRoles(new HashSet<>(roles));
 
+        // Lưu user vào DB và trả về response
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
@@ -97,9 +100,30 @@ public class UserService {
 //        userRepository.save(user);
 //        return userMapper.toUserResponse(user);
 //    }
+    public UserResponse updateMyPassword(ChangePassworkRequest request){
+        User user = getAuthenticatedUser();
+        // Kiểm tra mật khẩu hiện tại
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new AppException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        // Kiểm tra mật khẩu mới và xác nhận mật khẩu
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new AppException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        // Mã hóa và cập nhật mật khẩu mới
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        return userMapper.toUserResponse(userRepository.save(user));
+    }
 
     public UserResponse getMyInfo(){
         User user = getAuthenticatedUser();
+        // Check if user status is LOCKED
+        if ("LOCKED".equals(user.getStatus()) || "Đã khóa".equals(user.getStatus())) {
+            throw new AppException(ErrorCode.USER_LOCKED);
+        }
         return userMapper.toUserResponse(user);
     }
 
@@ -110,5 +134,35 @@ public class UserService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
+
+    public void checkUserActivityStatus(String id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        String currentStatus = user.getStatus();
+        String newStatus;
+
+        // Cyclic transition logic for String status
+        switch (currentStatus) {
+            case "ACTIVE":
+            case "đang hoạt động":
+                newStatus = "LOCKED";
+                break;
+            case "LOCKED":
+            case "đã khóa":
+                newStatus = "RETIRED";
+                break;
+            case "RETIRED":
+            case "đã nghỉ":
+                newStatus = "ACTIVE";
+                break;
+            default:
+                throw new AppException(ErrorCode.INVALID_USER_STATUS);
+        }
+
+        user.setStatus(newStatus);
+        userRepository.save(user);
+    }
+
 
 }

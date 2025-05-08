@@ -1,4 +1,3 @@
-// services/userService.jsx
 import axios from 'axios';
 import { getToken } from './authService';
 
@@ -69,6 +68,17 @@ export const getUserInfo = async () => {
     return response.data.result;
   } catch (error) {
     console.error('Error fetching user info:', error);
+    throw error;
+  }
+};
+
+// Đổi mật khẩu người dùng hiện tại
+export const changePassword = async (passwordData) => {
+  try {
+    const response = await axios.put(`${API_URL}/api/users/updateMyPassword`, passwordData);
+    return response.data;
+  } catch (error) {
+    console.error('Error changing password:', error);
     throw error;
   }
 };

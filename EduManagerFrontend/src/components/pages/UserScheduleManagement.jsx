@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Alert, Typography, Input, DatePicker, Space, Button, Modal, Form, Select, message } from 'antd';
+import { Table, Card, Alert, Typography, Input, DatePicker, Space, Button, Tag, Dropdown, Menu, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import WorkScheduleService from '../../services/workScheduleService';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
-const { Option } = Select;
 
 const UserScheduleManagement = () => {
   const [schedules, setSchedules] = useState([]);
@@ -14,30 +13,32 @@ const UserScheduleManagement = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchText, setSearchText] = useState('');
-  const [dateRange, setDateRange] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [form] = Form.useForm();
+  const [dateFilter, setDateFilter] = useState(null);
 
   useEffect(() => {
     fetchSchedules();
-    fetchUsers(); // Lấy danh sách người dùng
   }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [searchText, dateRange, schedules]);
 
   const fetchSchedules = async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await WorkScheduleService.getUserWorkSchedulesByUser();
-      const normalizedData = data.map((schedule) => ({
-        ...schedule,
-        startTime: dayjs(schedule.startTime).isValid() ? schedule.startTime : null,
-        endTime: dayjs(schedule.endTime).isValid() ? schedule.endTime : null,
-      }));
+      const normalizedData = data.map((schedule) => {
+        const startTime = schedule.startTime ? dayjs(schedule.startTime) : null;
+        const endTime = schedule.endTime ? dayjs(schedule.endTime) : null;
+        if (startTime && !startTime.isValid()) {
+          console.warn(`Invalid startTime for schedule ID ${schedule.id}: ${schedule.startTime}`);
+        }
+        if (endTime && !endTime.isValid()) {
+          console.warn(`Invalid endTime for schedule ID ${schedule.id}: ${schedule.endTime}`);
+        }
+        return {
+          ...schedule,
+          startTime: startTime && startTime.isValid() ? startTime : null,
+          endTime: endTime && endTime.isValid() ? endTime : null,
+        };
+      });
       setSchedules(normalizedData);
       setFilteredSchedules(normalizedData);
     } catch (err) {
@@ -48,72 +49,73 @@ const UserScheduleManagement = () => {
     }
   };
 
-  const fetchUsers = async () => {
+  const handleStatusChange = async (userId, scheduleId, status) => {
+    setLoading(true);
     try {
-      const data = await WorkScheduleService.getUsers(); // Giả sử có API lấy danh sách người dùng
-      setUsers(data);
+      await WorkScheduleService.updateWorkScheduleStatus(userId, scheduleId, status);
+      message.success('Cập nhật trạng thái thành công');
+      await fetchSchedules(); // Refresh the schedule list
     } catch (err) {
-      message.error('Không thể tải danh sách người dùng.');
-      console.error('Error fetching users:', err);
+      message.error('Cập nhật trạng thái thất bại');
+      console.error('Error updating status:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const applyFilters = () => {
     let filtered = [...schedules];
+
+    // Apply text search filter
     if (searchText) {
+      const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(
         (schedule) =>
-          schedule.title?.toLowerCase().includes(searchText.toLowerCase()) ||
-          schedule.type?.toLowerCase().includes(searchText.toLowerCase()) ||
-          schedule.location?.toLowerCase().includes(searchText.toLowerCase())
+          schedule.title?.toLowerCase().includes(searchLower) ||
+          schedule.type?.toLowerCase().includes(searchLower) ||
+          schedule.location?.toLowerCase().includes(searchLower) ||
+          schedule.status?.toLowerCase().includes(searchLower)
       );
     }
-    if (dateRange && dateRange.length === 2) {
-      const [start, end] = dateRange;
-      filtered = filtered.filter(
-        (schedule) =>
-          schedule.startTime &&
-          schedule.endTime &&
-          (dayjs(schedule.startTime).isBetween(start, end, 'day', '[]') ||
-           dayjs(schedule.endTime).isBetween(start, end, 'day', '[]') ||
-           (dayjs(schedule.startTime).isSameOrBefore(start, 'day') && dayjs(schedule.endTime).isSameOrAfter(end, 'day')))
-      );
+
+    // Apply date range filter
+    if (dateFilter && dateFilter[0] && dateFilter[1]) {
+      const startFilter = dayjs(dateFilter[0]).startOf('day');
+      const endFilter = dayjs(dateFilter[1]).endOf('day');
+      filtered = filtered.filter((schedule) => {
+        const startTime = schedule.startTime ? dayjs(schedule.startTime) : null;
+        const endTime = schedule.endTime ? dayjs(schedule.endTime) : null;
+        return (
+          startTime &&
+          endTime &&
+          startTime.isValid() &&
+          endTime.isValid() &&
+          (startTime.isSame(startFilter) || startTime.isAfter(startFilter)) &&
+          (endTime.isSame(endFilter) || endTime.isBefore(endFilter))
+        );
+      });
     }
+
     setFilteredSchedules(filtered);
   };
 
-  const formatDateTime = (dateTimeString) => {
-    return dateTimeString ? dayjs(dateTimeString).format('DD/MM/YYYY HH:mm') : '-';
+  useEffect(() => {
+    applyFilters();
+  }, [searchText, dateFilter, schedules]);
+
+  const formatDateTime = (dateTime) => {
+    return dateTime && dayjs(dateTime).isValid() ? dayjs(dateTime).format('DD/MM/YYYY HH:mm') : '-';
   };
 
-  const handleAddSchedules = async (values) => {
-    try {
-      setLoading(true);
-      const { users, title, type, location, timeRange } = values;
-      const [startTime, endTime] = timeRange;
-
-      // Chuẩn bị dữ liệu lịch cho từng người dùng
-      const schedulesData = users.map((userId) => ({
-        userId,
-        title,
-        type,
-        location,
-        startTime: startTime.toISOString(),
-        endTime: endTime.toISOString(),
-      }));
-
-      // Gửi yêu cầu thêm lịch hàng loạt
-      await WorkScheduleService.createBulkSchedules(schedulesData);
-      message.success('Thêm lịch giảng dạy thành công!');
-      setIsModalVisible(false);
-      form.resetFields();
-      fetchSchedules(); // Làm mới danh sách lịch
-    } catch (err) {
-      message.error('Không thể thêm lịch giảng dạy. Vui lòng thử lại.');
-      console.error('Error adding schedules:', err);
-    } finally {
-      setLoading(false);
-    }
+  const formatStatus = (status) => {
+    const statusMap = {
+      PENDING: { text: 'Chưa thực hiện', color: 'default' },
+      IN_PROGRESS: { text: 'Đang thực hiện', color: 'blue' },
+      COMPLETED: { text: 'Đã hoàn thành', color: 'green' },
+      CANCELLED: { text: 'Đã hủy', color: 'red' },
+    };
+    const { text, color } = statusMap[status] || { text: status || '-', color: 'default' };
+    return <Tag color={color}>{text}</Tag>;
   };
 
   const columns = [
@@ -122,6 +124,28 @@ const UserScheduleManagement = () => {
     { title: 'Địa điểm', dataIndex: 'location', key: 'location', render: (text) => text || 'Không có' },
     { title: 'Thời gian bắt đầu', dataIndex: 'startTime', key: 'startTime', render: (time) => formatDateTime(time) },
     { title: 'Thời gian kết thúc', dataIndex: 'endTime', key: 'endTime', render: (time) => formatDateTime(time) },
+    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (status) => formatStatus(status) },
+    {
+      title: 'Hành động',
+      key: 'action',
+      render: (_, record) => (
+        <Dropdown
+          overlay={
+            <Menu
+              onClick={({ key }) => handleStatusChange(record.userid, record.id, key)}
+              items={[
+                { key: 'PENDING', label: 'Chưa thực hiện' },
+                { key: 'IN_PROGRESS', label: 'Đang thực hiện' },
+                { key: 'COMPLETED', label: 'Đã hoàn thành' },
+                { key: 'CANCELLED', label: 'Đã hủy' },
+              ]}
+            />
+          }
+        >
+          <Button>Thay đổi trạng thái</Button>
+        </Dropdown>
+      ),
+    },
   ];
 
   return (
@@ -141,7 +165,7 @@ const UserScheduleManagement = () => {
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
         <Space>
           <Input
-            placeholder="Tìm kiếm theo tiêu đề, loại hoặc địa điểm"
+            placeholder="Tìm kiếm theo tiêu đề, loại, địa điểm hoặc trạng thái"
             prefix={<SearchOutlined />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
@@ -149,23 +173,13 @@ const UserScheduleManagement = () => {
           />
           <RangePicker
             format="DD/MM/YYYY"
-            onChange={(dates) => setDateRange(dates || [])}
+            onChange={(dates) => setDateFilter(dates)}
             style={{ width: 300 }}
           />
         </Space>
         <Space>
-          <Button
-            type="primary"
-            onClick={fetchSchedules}
-            loading={loading}
-          >
+          <Button type="primary" onClick={fetchSchedules} loading={loading}>
             Làm mới
-          </Button>
-          <Button
-            type="primary"
-            onClick={() => setIsModalVisible(true)}
-          >
-            Thêm lịch giảng dạy
           </Button>
         </Space>
       </Space>
@@ -179,75 +193,6 @@ const UserScheduleManagement = () => {
           emptyText: 'Bạn chưa có lịch làm việc nào.',
         }}
       />
-
-      {/* Modal thêm lịch giảng dạy */}
-      <Modal
-        title="Thêm lịch giảng dạy"
-        visible={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleAddSchedules}
-        >
-          <Form.Item
-            name="users"
-            label="Chọn giáo viên/nhân viên"
-            rules={[{ required: true, message: 'Vui lòng chọn ít nhất một người!' }]}
-          >
-            <Select
-              mode="multiple"
-              placeholder="Chọn người dùng"
-              allowClear
-              showSearch
-              optionFilterProp="children"
-            >
-              {users.map((user) => (
-                <Option key={user.id} value={user.id}>
-                  {user.name} ({user.ma_nhan_vien || user.id})
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="title"
-            label="Tiêu đề"
-            rules={[{ required: true, message: 'Vui lòng nhập tiêu đề!' }]}
-          >
-            <Input placeholder="Nhập tiêu đề lịch" />
-          </Form.Item>
-          <Form.Item
-            name="type"
-            label="Loại"
-            rules={[{ required: true, message: 'Vui lòng nhập loại lịch!' }]}
-          >
-            <Input placeholder="Nhập loại lịch (VD: Giảng dạy, Họp)" />
-          </Form.Item>
-          <Form.Item
-            name="location"
-            label="Địa điểm"
-          >
-            <Input placeholder="Nhập địa điểm (tùy chọn)" />
-          </Form.Item>
-          <Form.Item
-            name="timeRange"
-            label="Thời gian"
-            rules={[{ required: true, message: 'Vui lòng chọn thời gian!' }]}
-          >
-            <RangePicker
-              showTime
-              format="DD/MM/YYYY HH:mm"
-            />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              Thêm lịch
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
     </Card>
   );
 };

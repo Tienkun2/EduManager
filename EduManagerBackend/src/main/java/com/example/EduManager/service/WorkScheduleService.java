@@ -1,8 +1,9 @@
 package com.example.EduManager.service;
 
-
 import com.example.EduManager.Enum.ErrorCode;
+import com.example.EduManager.Enum.ScheduleStatus;
 import com.example.EduManager.dto.request.WorkScheduleCreationRequest;
+import com.example.EduManager.dto.request.WorkScheduleStatusUpdateRequest;
 import com.example.EduManager.dto.response.WorkScheduleResponse;
 import com.example.EduManager.entity.User;
 import com.example.EduManager.entity.WorkSchedule;
@@ -30,7 +31,7 @@ public class WorkScheduleService {
     private final WorkScheduleRepository workScheduleRepository;
     private final WorkScheduleMapper workScheduleMapper;
 
-    public WorkScheduleResponse createWorkSchedule(String id , WorkScheduleCreationRequest request){;;
+    public WorkScheduleResponse createWorkSchedule(String id, WorkScheduleCreationRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         // check trùng lặp lịch làm việc
@@ -38,14 +39,14 @@ public class WorkScheduleService {
         // check trùng lặp địa điểm
         validateLocationOverlap(request.getLocation(), request.getStartTime(), request.getEndTime(), null);
 
-
         WorkSchedule workSchedule = workScheduleMapper.toWorkSchedule(request);
-
         workSchedule.setUser(user);
+        workSchedule.setStatus(request.getStatus() != null ? request.getStatus() : ScheduleStatus.PENDING); // Default to PENDING
+        workSchedule.setCreatedAt(LocalDateTime.now());
         return workScheduleMapper.toWorkScheduleResponse(workScheduleRepository.save(workSchedule));
     }
 
-    public List<WorkScheduleResponse> getAllWorkScheduleByUserId(String id){
+    public List<WorkScheduleResponse> getAllWorkScheduleByUserId(String id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         List<WorkSchedule> workSchedules = workScheduleRepository.findByUserId(user.getId());
@@ -54,14 +55,13 @@ public class WorkScheduleService {
                 .collect(Collectors.toList());
     }
 
-    public List<WorkScheduleResponse> getAllWorkSchedule(){
+    public List<WorkScheduleResponse> getAllWorkSchedule() {
         List<WorkSchedule> workSchedules = workScheduleRepository.findAll();
         return workSchedules.stream()
                 .map(workScheduleMapper::toWorkScheduleResponse)
                 .collect(Collectors.toList());
     }
 
-    // In WorkScheduleService.java
     private void validateScheduleOverlap(String userId, LocalDateTime startTime, LocalDateTime endTime, String scheduleId) {
         List<WorkSchedule> overlappingSchedules = workScheduleRepository.findOverlappingSchedules(
                 userId, startTime, endTime, scheduleId);
@@ -71,53 +71,64 @@ public class WorkScheduleService {
         }
     }
 
-    private void validateLocationOverlap(String location, LocalDateTime startTime, LocalDateTime endTime, String scheduleId) {
-        if (location != null && !location.isEmpty()) {
-            List<WorkSchedule> overlappingLocations = workScheduleRepository.findByLocationAndTime(
-                    location, startTime, endTime, scheduleId);
-            if (!overlappingLocations.isEmpty()) {
-                throw new AppException(ErrorCode.LOCATION_OVERLAP);
-            }
+    private void validateLocationOverlap(String location, LocalDateTime startTime, LocalDateTime endTime, String excludeScheduleId) {
+        List<WorkSchedule> conflictingSchedules = workScheduleRepository.findByLocationAndTimeRange(
+                location, startTime, endTime, excludeScheduleId);
+
+        if (!conflictingSchedules.isEmpty()) {
+            throw new AppException(ErrorCode.LOCATION_OVERLAP);
         }
     }
 
     public WorkScheduleResponse updateWorkSchedule(String userId, String scheduleId, WorkScheduleCreationRequest request) {
-        // Tìm lịch hiện tại
         WorkSchedule existingSchedule = workScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new AppException(ErrorCode.SCHEDULE_NOT_FOUND));
 
-        // Kiểm tra quyền: userId phải khớp với userId của lịch
         if (!existingSchedule.getUser().getId().equals(userId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
-        // Kiểm tra trùng lặp thời gian của người dùng
         validateScheduleOverlap(
                 userId,
                 request.getStartTime(),
                 request.getEndTime(),
-                scheduleId); // Loại trừ lịch hiện tại khỏi kiểm tra
+                scheduleId);
 
-        // Kiểm tra trùng lặp địa điểm
         validateLocationOverlap(
                 request.getLocation(),
                 request.getStartTime(),
                 request.getEndTime(),
-                scheduleId); // Loại trừ lịch hiện tại khỏi kiểm tra
+                scheduleId);
 
-        // Cập nhật các thuộc tính của lịch
         existingSchedule.setType(request.getType());
         existingSchedule.setTitle(request.getTitle());
         existingSchedule.setDescription(request.getDescription());
         existingSchedule.setLocation(request.getLocation());
         existingSchedule.setStartTime(request.getStartTime());
         existingSchedule.setEndTime(request.getEndTime());
+        existingSchedule.setStatus(request.getStatus() != null ? request.getStatus() : existingSchedule.getStatus());
         existingSchedule.setUpdatedAt(LocalDateTime.now());
 
-        // Lưu lịch đã cập nhật
         return workScheduleMapper.toWorkScheduleResponse(workScheduleRepository.save(existingSchedule));
     }
 
+    public WorkScheduleResponse updateWorkScheduleStatus(String userId, String scheduleId, WorkScheduleStatusUpdateRequest request) {
+        WorkSchedule existingSchedule = workScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new AppException(ErrorCode.SCHEDULE_NOT_FOUND));
+
+        if (!existingSchedule.getUser().getId().equals(userId)) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        if (request.getStatus() == null) {
+            throw new AppException(ErrorCode.INVALID_SCHEDULE_STATUS);
+        }
+
+        existingSchedule.setStatus(request.getStatus());
+        existingSchedule.setUpdatedAt(LocalDateTime.now());
+
+        return workScheduleMapper.toWorkScheduleResponse(workScheduleRepository.save(existingSchedule));
+    }
 
     public void deleteWorkSchedule(String userId, String scheduleId) {
         WorkSchedule existingSchedule = workScheduleRepository.findById(scheduleId)
@@ -126,7 +137,6 @@ public class WorkScheduleService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        // Check if the user is authorized to delete this schedule
         if (!existingSchedule.getUser().getId().equals(userId)) {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
@@ -134,14 +144,14 @@ public class WorkScheduleService {
         workScheduleRepository.delete(existingSchedule);
     }
 
-    public List<WorkScheduleResponse> getAllWorkScheduleByType(String type){
+    public List<WorkScheduleResponse> getAllWorkScheduleByType(String type) {
         List<WorkSchedule> workSchedules = workScheduleRepository.findByType(type);
         return workSchedules.stream()
                 .map(workScheduleMapper::toWorkScheduleResponse)
                 .collect(Collectors.toList());
     }
 
-    public List<WorkScheduleResponse> getAllWorkScheduleByTime(LocalDateTime startTime, LocalDateTime endTime){
+    public List<WorkScheduleResponse> getAllWorkScheduleByTime(LocalDateTime startTime, LocalDateTime endTime) {
         List<WorkSchedule> workSchedules = workScheduleRepository.findByStartTimeBetween(startTime, endTime);
         if (workSchedules.isEmpty()) {
             throw new AppException(ErrorCode.SCHEDULE_NOT_FOUND);
@@ -153,21 +163,17 @@ public class WorkScheduleService {
 
     private User getAuthenticatedUser() {
         var context = SecurityContextHolder.getContext();
-        String userId = context.getAuthentication().getName(); // Nếu token lưu ID thì lấy ID
+        String userId = context.getAuthentication().getName();
         return userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 
     public List<WorkScheduleResponse> getAllWorkScheduleByUser() {
-        // Lấy user đã xác thực
         User user = getAuthenticatedUser();
-
-        // Truy vấn danh sách WorkSchedule của user từ repository
         List<WorkSchedule> workSchedules = workScheduleRepository.findByUser(user);
-
-        // Chuyển đổi danh sách WorkSchedule thành danh sách WorkScheduleResponse
         return workSchedules.stream()
                 .map(workScheduleMapper::toWorkScheduleResponse)
                 .collect(Collectors.toList());
     }
+
 }

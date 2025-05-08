@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Typography, Space, Button, Alert, Descriptions, Avatar, Row, Col } from 'antd';
-import { UserOutlined, CalendarOutlined, FileTextOutlined } from '@ant-design/icons';
+import { UserOutlined, CalendarOutlined, FileTextOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { isAuthenticated } from '../../services/authService';
 import { getUserInfo } from '../../services/userService';
@@ -13,6 +13,7 @@ const UserDashboard = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  // Lấy thông tin người dùng
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -40,7 +41,9 @@ const UserDashboard = () => {
 
   return (
     <Card>
-      <Title level={2}>Trang chủ</Title>
+      <Row justify="space-between" align="middle">
+        <Title level={2}>Trang chủ</Title>
+      </Row>
       {error && (
         <Alert
           message="Lỗi"
@@ -110,6 +113,16 @@ const UserDashboard = () => {
                 onClick={() => navigate('/user/leave-requests')}
               >
                 Quản lý đơn xin nghỉ phép
+              </Button>
+            </Col>
+            <Col>
+              <Button
+                type="primary"
+                icon={<LockOutlined />}
+                size="large"
+                onClick={() => navigate('/user/change-password')}
+              >
+                Đổi mật khẩu
               </Button>
             </Col>
           </Row>

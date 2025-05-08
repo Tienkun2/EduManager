@@ -44,4 +44,14 @@ public interface WorkScheduleRepository extends JpaRepository<WorkSchedule, Stri
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime,
             @Param("scheduleId") String scheduleId);
+
+    // Check
+    @Query("SELECT ws FROM WorkSchedule ws WHERE ws.location = :location " +
+            "AND ws.startTime < :endTime AND ws.endTime > :startTime " +
+            "AND (:excludeScheduleId IS NULL OR ws.id != :excludeScheduleId)")
+    List<WorkSchedule> findByLocationAndTimeRange(
+            @Param("location") String location,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime,
+            @Param("excludeScheduleId") String excludeScheduleId);
 }

@@ -1,18 +1,18 @@
 package com.example.EduManager.controller;
 
-
 import com.example.EduManager.dto.request.ApiResponse;
 import com.example.EduManager.dto.request.WorkScheduleCreationRequest;
+import com.example.EduManager.dto.request.WorkScheduleStatusUpdateRequest;
 import com.example.EduManager.dto.response.WorkScheduleResponse;
 import com.example.EduManager.service.WorkScheduleService;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,22 +20,25 @@ import java.util.List;
 @RequestMapping("/work-schedule")
 @NoArgsConstructor
 @AllArgsConstructor
+@Slf4j
 public class WorkScheduleController {
     @Autowired
     private WorkScheduleService workScheduleService;
+
     @PostMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<WorkScheduleResponse> createWorkSchedule(@PathVariable String id, @RequestBody WorkScheduleCreationRequest request){
+    public ApiResponse<WorkScheduleResponse> createWorkSchedule(@PathVariable String id, @RequestBody WorkScheduleCreationRequest request) {
+        log.info("Received createWorkSchedule request for userId: {}, payload: {}", id, request);
         return ApiResponse.<WorkScheduleResponse>builder()
                 .code(200)
                 .message("Create work schedule success")
-                .result(workScheduleService.createWorkSchedule(id,request))
+                .result(workScheduleService.createWorkSchedule(id, request))
                 .build();
     }
 
     @PutMapping("/{userid}/{scheduleid}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<WorkScheduleResponse> updateWorkSchedule(@PathVariable String userid ,@PathVariable String scheduleid, @RequestBody WorkScheduleCreationRequest request) {
+    public ApiResponse<WorkScheduleResponse> updateWorkSchedule(@PathVariable String userid, @PathVariable String scheduleid, @RequestBody WorkScheduleCreationRequest request) {
         return ApiResponse.<WorkScheduleResponse>builder()
                 .code(200)
                 .message("Update work schedule success")
@@ -43,9 +46,23 @@ public class WorkScheduleController {
                 .build();
     }
 
+    @PutMapping("/{userid}/{scheduleid}/status")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ApiResponse<WorkScheduleResponse> updateWorkScheduleStatus(
+            @PathVariable String userid,
+            @PathVariable String scheduleid,
+            @RequestBody WorkScheduleStatusUpdateRequest request) {
+        log.info("Received updateWorkScheduleStatus request for userId: {}, scheduleId: {}, payload: {}", userid, scheduleid, request);
+        return ApiResponse.<WorkScheduleResponse>builder()
+                .code(200)
+                .message("Update work schedule status success")
+                .result(workScheduleService.updateWorkScheduleStatus(userid, scheduleid, request))
+                .build();
+    }
+
     @GetMapping()
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<List<WorkScheduleResponse>> getAllWorkSchedule(){
+    public ApiResponse<List<WorkScheduleResponse>> getAllWorkSchedule() {
         return ApiResponse.<List<WorkScheduleResponse>>builder()
                 .code(200)
                 .message("Get all work schedule success")
@@ -55,7 +72,7 @@ public class WorkScheduleController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<List<WorkScheduleResponse>> getAllWorkScheduleByUserId(@PathVariable String id){
+    public ApiResponse<List<WorkScheduleResponse>> getAllWorkScheduleByUserId(@PathVariable String id) {
         return ApiResponse.<List<WorkScheduleResponse>>builder()
                 .code(200)
                 .message("Get all work schedule success")
@@ -87,7 +104,7 @@ public class WorkScheduleController {
     }
 
     @GetMapping("/myWorkSchedule")
-    public ApiResponse<List<WorkScheduleResponse>> getAllWorkScheduleByUser(){
+    public ApiResponse<List<WorkScheduleResponse>> getAllWorkScheduleByUser() {
         return ApiResponse.<List<WorkScheduleResponse>>builder()
                 .code(200)
                 .message("Get all work schedule success")
